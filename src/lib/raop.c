@@ -31,6 +31,7 @@
 #include "netutils.h"
 #include "logger.h"
 #include "compat.h"
+#include "rt_sched.h"
 
 /* Actually 345 bytes for 2048-bit key */
 #define MAX_SIGNATURE_LEN 512
@@ -219,7 +220,9 @@ conn_request(void *ptr, http_request_t *request, http_response_t **response)
 		logger_log(conn->raop->logger, LOGGER_DEBUG, "Got response: %s", signature);
 	}
 
+#ifndef CONFIG_BETTER_PERFORMANCE
 	logger_log(conn->raop->logger, LOGGER_DEBUG, "Handling request %s with URL %s", method, url);
+#endif
 	raop_handler_t handler = NULL;
 	if (require_auth) {
 		/* Do nothing in case of authentication request */

@@ -34,6 +34,7 @@
 
 #include <shairplay/dnssd.h>
 #include <shairplay/raop.h>
+#include "lib/rt_sched.h"
 
 #include <ao/ao.h>
 
@@ -48,6 +49,8 @@ typedef struct {
 	char ao_driver[56];
 	char ao_devicename[56];
 	char ao_deviceid[16];
+	unsigned realtime;
+	unsigned cpu_mask;
 } shairplay_options_t;
 
 typedef struct {
@@ -55,8 +58,11 @@ typedef struct {
 
 	int buffering;
 	int buflen;
+#ifdef CONGIG_LARGE_BUFFER
+	char buffer[32768];
+#else
 	char buffer[8192];
-
+#endif
 	float volume;
 } shairplay_session_t;
 
@@ -207,14 +213,18 @@ audio_process(void *cls, void *opaque, const void *buffer, int buflen)
 	int processed;
 
 	if (session->buffering) {
+#ifndef CONFIG_BETTER_PERFORMANCE
 		printf("Buffering...\n");
+#endif
 		if (session->buflen+buflen < sizeof(session->buffer)) {
 			memcpy(session->buffer+session->buflen, buffer, buflen);
 			session->buflen += buflen;
 			return;
 		}
 		session->buffering = 0;
+#ifndef CONFIG_BETTER_PERFORMANCE
 		printf("Finished buffering...\n");
+#endif
 
 		processed = 0;
 		while (processed < session->buflen) {
@@ -300,9 +310,23 @@ parse_options(shairplay_options_t *opt, int argc, char *argv[])
 			fprintf(stderr, "      --ao_driver=driver          Sets the ao driver (optional)\n");
 			fprintf(stderr, "      --ao_devicename=devicename  Sets the ao device name (optional)\n");
 			fprintf(stderr, "      --ao_deviceid=id            Sets the ao device id (optional)\n");
+#ifndef WIN32
+			fprintf(stderr, "      --realtime=xx               Sets realtime scheduler and realtime priority(1-99)\n");
+			fprintf(stderr, "      --mask=xx                   Sets cpu mask\n");
+#endif
 			fprintf(stderr, "  -h, --help                      This help\n");
 			fprintf(stderr, "\n");
 			return 1;
+		} else if (!strncmp(arg, "--realtime=", 11)) {
+			if (sscanf(arg+11, "%d", &opt->realtime) < 1 || opt->realtime > 99) {
+				fprintf(stderr, "Invalid format given for realtime, 1 <= realtime <= 99 is required\n");
+				return 1;
+			}
+		} else if (!strncmp(arg, "--mask=", 7)) {
+			if (sscanf(arg+7, "%d", &opt->cpu_mask) <= 0) {
+				fprintf(stderr, "Invalid format given for mask, a number is required\n");
+				return 1;
+			}
 		}
 	}
 
@@ -330,6 +354,13 @@ main(int argc, char *argv[])
 	if (parse_options(&options, argc, argv)) {
 		return 0;
 	}
+
+#ifndef WIN32
+	if (options.realtime)
+		set_process_priority(options.realtime);
+	if (options.cpu_mask)
+		set_process_affinity(options.cpu_mask);
+#endif
 
 	ao_initialize();
 

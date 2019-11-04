@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "compat.h"
 #include "logger.h"
+#include "rt_sched.h"
 
 #define NO_FLUSH (-42)
 
@@ -235,7 +236,9 @@ raop_rtp_resend_callback(void *opaque, unsigned short seqnum, unsigned short cou
 	addr = (struct sockaddr *)&raop_rtp->control_saddr;
 	addrlen = raop_rtp->control_saddr_len;
 
+#ifndef CONFIG_BETTER_PERFORMANCE
 	logger_log(raop_rtp->logger, LOGGER_DEBUG, "Got resend request %d %d", seqnum, count);
+#endif
 	ourseqnum = raop_rtp->control_seqnum++;
 
 	/* Fill the request buffer */
@@ -432,7 +435,9 @@ raop_rtp_thread_udp(void *arg)
 			if (packetlen >= 12) {
 				char type = packet[1] & ~0x80;
 
+#ifndef CONFIG_BETTER_PERFORMANCE
 				logger_log(raop_rtp->logger, LOGGER_DEBUG, "Got control packet of type 0x%02x", type);
+#endif
 				if (type == 0x56) {
 					/* Handle resent data packet */
 					int ret = raop_buffer_queue(raop_rtp->buffer, packet+4, packetlen-4, 1);

@@ -22,6 +22,7 @@
 #include "http_request.h"
 #include "compat.h"
 #include "logger.h"
+#include "rt_sched.h"
 
 struct http_connection_s {
 	int connected;
@@ -279,7 +280,9 @@ httpd_thread(void *arg)
 				assert(connection->request);
 			}
 
+#ifndef CONFIG_BETTER_PERFORMANCE
 			logger_log(httpd->logger, LOGGER_DEBUG, "Receiving on socket %d", connection->socket_fd);
+#endif
 			ret = recv(connection->socket_fd, buffer, sizeof(buffer), 0);
 			if (ret == 0) {
 				logger_log(httpd->logger, LOGGER_INFO, "Connection closed for socket %d", connection->socket_fd);
@@ -331,8 +334,10 @@ httpd_thread(void *arg)
 					logger_log(httpd->logger, LOGGER_INFO, "Didn't get response");
 				}
 				http_response_destroy(response);
+#ifndef CONFIG_BETTER_PERFORMANCE
 			} else {
 				logger_log(httpd->logger, LOGGER_DEBUG, "Request not complete, waiting for more data...");
+#endif
 			}
 		}
 	}

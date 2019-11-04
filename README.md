@@ -24,7 +24,7 @@ sudo apt-get install avahi-daemon
 
 ```
 ./autogen.sh
-./configure
+./configure --prefix=/usr/local
 make
 sudo make install
 ```
@@ -54,6 +54,8 @@ Usage: shairplay [OPTION...]
       --hwaddr=address            Sets the MAC address, useful if running multuple instances
       --ao_devicename=devicename  Sets the ao device name (optional)
       --ao_deviceid=id            Sets the ao device id (optional)
+      --realtime=xx               Sets realtime scheduler and realtime priority (1 - 99)
+      --mask=xx                   Sets cpu mask
   -h, --help                      This help
 ```
 

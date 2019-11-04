@@ -374,7 +374,9 @@ raop_handler_set_parameter(raop_conn_t *conn,
 			logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP not initialized at SET_PARAMETER coverart");
 		}
 	} else if (!strcmp(content_type, "application/x-dmap-tagged")) {
+#ifndef CONFIG_BETTER_PERFORMANCE
 		logger_log(conn->raop->logger, LOGGER_INFO, "Got metadata of %d bytes", datalen);
+#endif
 		if (conn->raop_rtp) {
 			raop_rtp_set_metadata(conn->raop_rtp, data, datalen);
 		} else {
